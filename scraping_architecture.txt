@@ -1,0 +1,38 @@
+======================================================
+ SMART SCOUT: SCRAPING & ANTI-BLOCKING ARCHITECTURE
+======================================================
+
+1. THE CORE ARCHITECTURE
+------------------------------------------------------
+Smart Scout operates on a deeply segmented scraper setup using Scrapy as the backbone. It uses three primary spiders designed to chain data continuously:
+- **Search Spider** (search_spider.py): Bypasses sponsored results and extracts high-level ASINs from broad category queries across Amazon pages.
+- **Product Spider** (product_spider.py): Target specific ASINs to extract baseline structural data, base prices, FBA indicators, and Buy Box statuses.
+- **Offers Spider** (offers_spider.py): The crucial regional mapping spider that dives into the '/gp/offer-listing/ASIN' endpoints to scrape all available sellers, iterating through pagination.
+
+Once data is extracted, it flows through a sequential pipeline constraint (`pipelines.py`):
+1. Validation Pipeline: Drops faulty payloads or negative prices.
+2. Honeypot/Suspicious Filter: Flags irrational numeric sequences.
+3. Deduplication Pipeline: Caches unique extraction hashes in Redis to avoid polluting the database with identical overlapping scrapes within 30 minutes.
+4. Database Pipeline: Validates timezone timestamps and seamlessly upserts rows to the SQLite architecture.
+
+All of this happens asynchronously and autonomously driven by APScheduler triggering Scrapy sub-processes every 90 minutes.
+
+2. ANTI-BLOCKING STRATEGIES (THE STEALTH LAYER)
+------------------------------------------------------
+Amazon maintains one of the strictest scraping perimeters in the industry. To operate reliably, we utilize a 5-layer stealth configuration (`middlewares.py` & `settings.py`):
+
+A) GEO-LOCALIZED PROXY ROTATION 
+We integrate the ScrapeOps Proxy Middleware operating out of India (country='in' configuration). This avoids hitting Amazon.in requests from US/EU datacenters, which are routinely throttled or blocked. This handles constant IP rotation per request.
+
+B) TLS FINGERPRINT EVASION (curl_cffi)
+Scrapy uses Python's standard `requests` or Twisted frameworks to handle HTTP sockets. Amazon algorithms detect these "Bot HTTP behaviors" instantly.
+We override the default Downloader Pipeline with a `TLSDownloaderMiddleware` powered by the `curl_cffi` module. This forces every request to emulate exactly how a Google Chrome 120 browser negotiates its TLS Handshake (impersonate='chrome120'), making us cryptographically identical to a human on Chrome.
+
+C) EXPLICIT COOKIE & LOCALE INJECTION
+Amazon serves specific Buy Box sellers based heavily on the viewing buyer's physical location. `LocationMiddleware` explicitly maps to regional pin codes (e.g. 600001 for Chennai). It overrides the internal `delivery-zip-code` session cookie and asserts an `en-IN` Accept-Language header, rendering the localized Amazon page variants dynamically.
+
+D) DOM HEURISTICS & CSS DECOUPLING
+Amazon continually rotates their Frontend Class names visually to break HTML scrapers tracking specific button styles. `heuristic_price_extract` circumvents this by anchoring its search queries onto un-changing legacy ID schemas (like `add-to-cart-button`) and crawling upwards heuristically through the DOM tree to extract Indian Rupee ('₹') integers instead of relying blindly on target CSS chains.
+
+E) PLAYWRIGHT JS-FAILOVER
+For certain dynamically triggered or hidden endpoints, generic request sockets fall short. `offers_spider.py` is rigged to gracefully fallover to headless Chromium instances (`playwright-chromium`) running full JS-runtimes when scraping Javascript-heavy DOMs, trading minor performance overheads for absolute guarantee of payload extraction.
