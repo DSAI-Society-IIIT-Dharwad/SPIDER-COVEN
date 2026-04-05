@@ -1,7 +1,7 @@
 # Smart Scout — Real-time Amazon.in Price Monitor
 
 ## Project Overview
-Smart Scout empowers Amazon.in bearing distributors like SKF to monitor competitor prices in real-time across multiple locations. By aggregating prices, logisitics information, and buy-box winners using local pin codes, it computes dominance scores and alerts sellers when they are being undercut. All of this runs natively on localhost without requiring Docker infrastructures.
+Smart Scout empowers Amazon.in bearing distributors (SKF) to monitor competitor prices in real-time across multiple locations. By aggregating prices, logisitics information, and buy-box winners using local pin codes, it computes dominance scores and alerts sellers when they are being undercut. All of this runs natively on localhost without requiring Docker infrastructures.
 
 ## Quickstart (5 commands)
 
