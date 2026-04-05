@@ -1,0 +1,29 @@
+Smart Scout: Mentorship Round Summary
+=======================================
+Over the course of this Sprint, we successfully built "Smart Scout", a fully functional, localized Amazon price-monitoring platform designed specifically for bearing distributors actively fighting for the Amazon Buy Box.
+
+Here is a simple breakdown of everything we accomplished:
+
+1. THE SCRAPING ENGINE (The Spiders)
+We built three Scrapy-based web scrapers (Search, Product, and Offers) that automatically fetch Amazon page details. Instead of blindly trusting Amazon's website code (which they change often to break bots), we built "Heuristic Parsers" using BeautifulSoup. This means our spiders intelligently scan near the "Add to Cart" button to find the price and coupon checkboxes, making our scrapers incredibly resilient to UI updates.
+
+2. THE STEALTH MECHANISMS (Anti-Bot)
+Amazon hates scrapers and actively blocks them with 503 errors and CAPTCHAs. We fought back by:
+- Injecting "delivery-zip-code" cookies to spoof our location. We can actively see what a buyer in Delhi sees vs what a buyer in Chennai sees.
+- Using TLS Fingerprinting via `curl_cffi` to mimic real Google Chrome browser network packets.
+- Utilizing Playwright to spin up invisible (headless) Chromium browsers as a fallback when Amazon detects a basic bot.
+
+3. THE BACKEND & DATABASE 
+We set up a lightweight SQLite database (which requires no complicated docker setups) to store all our historical price snapshots securely. We also built an automated background task runner (`scheduler.py`) that wakes up every 90 minutes to crawl Amazon autonomously without human input. 
+
+4. THE INTELLIGENCE LAYER (The Brain)
+We didn't just scrape prices; we analyzed them. We wrote a FastAPI backend containing a Dominance Algorithm (`intelligence.py`). It calculates "Net Effective Price" (after coupons) and checks if a competitor has undercut our target seller. If they do, the system calculates the exact currency gap and issues an Alert ("Reduce price by ₹50 to win back the Buy Box!").
+
+5. THE DASHBOARD (The Frontend UI)
+We visualized all of this data using a gorgeous Streamlit dashboard (styled with CSS and interactive Plotly graphs). It has 4 distinct capabilities:
+- Price Table: A live grid highlighting who currently owns the Buy Box.
+- Price Trends: A timeline chart letting you see historical pricing curves.
+- Alerts Feed: A categorized feed warning the distributor of high, medium, and low severity undercutting attacks.
+- Seller Leaderboard & Heatmap: Our major differentiator! It plots out which seller dominates the Buy Box based on specific geographic pincodes so distributors can perfectly target their logistics.
+
+All of this was packaged together in a single `run.py` file, allowing us to spin up the entire architecture smoothly for a 3-minute demo presentation.
