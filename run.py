@@ -3,7 +3,7 @@ import subprocess, sys, time, os
 print("Starting Smart Scout — localhost demo")
 print("=" * 40)
 
-# Failsafe: Ensure we use the virtual environment's python even if the user ran 'python run.py' globally
+# Fail Safe: Ensure we use the virtual environment's python even if the user ran 'python run.py' globally
 PYTHON_BIN = "venv/Scripts/python" if os.path.exists("venv/Scripts/python.exe") else sys.executable
 
 processes = []
