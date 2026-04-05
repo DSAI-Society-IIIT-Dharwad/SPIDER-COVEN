@@ -41,3 +41,23 @@ def add_seller(seller: schemas.SellerCreate, db: Session = Depends(get_db)):
 @app.get("/sellers/{asin}")
 def get_sellers(asin: str, db: Session = Depends(get_db)):
     return db.query(models.Seller).filter(models.Seller.asin == asin).all()
+
+@app.get("/best/{asin}")
+def get_best_seller(asin: str, db: Session = Depends(get_db)):
+    sellers = db.query(models.Seller).filter(models.Seller.asin == asin).all()
+
+    if not sellers:
+        return {"message": "No data"}
+
+    # Compute score (lower is better)
+    def score(s):
+        return s.price + (s.delivery_days * 10)
+
+    best = min(sellers, key=score)
+
+    return {
+        "best_seller": best.seller_name,
+        "price": best.price,
+        "delivery_days": best.delivery_days,
+        "score": score(best)
+    }
